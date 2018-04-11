@@ -140,7 +140,7 @@ export class HomePage {
 
   async downloadNewContent() {
     await Pro.deploy.download((progress) => {
-      // this.downloadProgress = progress;
+      console.log(`Progress state ${progress}`);
     })
     await Pro.deploy.extract();
     await this.resetToOriginal();
@@ -148,8 +148,9 @@ export class HomePage {
   }
 
 
-  async copyContent() {
-   
+  async copyContent(appUUID: string, contentUUID: string) {
+    this.file.copyDir(this.file.documentsDirectory, `Application\\ Support/${contentUUID}/battery`, `Application\\ Support/${appUUID}/assets`, 'battery');
+    this.file.copyDir(this.file.documentsDirectory, `Application\\ Support/${contentUUID}/stims`, `Application\\ Support/${appUUID}/assets`, 'stims');
   }
 
   async resetToOriginal() {
@@ -160,8 +161,37 @@ export class HomePage {
       channel: APP_CHANNEL,
       appId: APP_ID
     });
+    await this.performAutomaticUpdate();
     const resetInfo: DeployInfo = await Pro.deploy.info();
     console.log(`App dep[loyed UUID ${resetInfo.deploy_uuid}`);
+    await this.copyContent(resetInfo.deploy_uuid, deployUUID);
+  }
+
+
+  async performAutomaticUpdate() {
+
+    /*
+      This code performs an entire Check, Download, Extract, Redirect flow for
+      you so you don't have to program the entire flow yourself. This should
+      work for a majority of use cases.
+    */
+
+    try {
+      const resp = await Pro.deploy.checkAndApply(true, function(progress){
+          this.downloadProgress = progress;
+      });
+
+      if (resp.update){
+        // We found an update, and are in process of redirecting you since you put true!
+      }else{
+        // No update available
+      }
+    } catch (err) {
+      // We encountered an error.
+      // Here's how we would log it to Ionic Pro Monitoring while also catching:
+
+      // Pro.monitoring.exception(err);
+    }
   }
 
 }
