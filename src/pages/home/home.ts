@@ -16,6 +16,7 @@ const CONTENT_APP_ID = '11052544';
 })
 export class HomePage {
 
+  private originalUUID: string;
   constructor(
     public navCtrl: NavController,
     public loadingCtrl: LoadingController,    
@@ -58,19 +59,23 @@ export class HomePage {
     });
   }
 
+  async checkAppContent() {
+    
+  }
 
   async downloadContent() {
     if(this.platform.is('core')) {
       console.log(`Faux download`);
       return;
     }
+    await this.checkAppContent();
     const applicationDirectory = await this.file.resolveDirectoryUrl(this.file.applicationDirectory);
     const applicationStorageDirectory = await this.file.resolveDirectoryUrl(this.file.applicationStorageDirectory);
     const dataDirectory = await this.file.resolveDirectoryUrl(this.file.dataDirectory);
     const documentsDirectory = await this.file.resolveDirectoryUrl(this.file.documentsDirectory);
     
     console.log(` application dir ${applicationDirectory.toURL()}`);
-    console.log(` applicationStorageDirectory dir ${applicationStorageDirectory.toURL()}`);
+    console.log(` applicationStorageDirectory dir ${applicationStorageDirectory.fullPath}`);
     console.log(` dataDirectory dir ${dataDirectory.toURL()}`);
     console.log(` documentsDirectory dir ${documentsDirectory.toURL()}`);
 
@@ -90,6 +95,7 @@ export class HomePage {
   async checkChannel() {
     try {
       const res = await Pro.deploy.info();
+      this.originalUUID = res.deploy_uuid;
       console.log(`check channel ${res.channel} ${res.binary_version}`);      
     } catch (err) {
       
@@ -153,12 +159,25 @@ export class HomePage {
   }
 
 
-  async copyContent(appUUID: string, contentUUID: string) {
-    console.log(`Copying content from ${contentUUID} to ${appUUID}`);
-    const appSupportDir = await this.file.resolveDirectoryUrl(`${this.file.applicationStorageDirectory}/Library/Application\\ Support/${contentUUID}/battery`);
-    console.log(`Content battery dir ${appSupportDir.toURL()}`);
-    this.file.copyDir(this.file.applicationStorageDirectory, `Library/Application\\ Support/${contentUUID}/battery`, `Library/Application\\ Support/${appUUID}/assets`, 'battery');
-    this.file.copyDir(this.file.applicationStorageDirectory, `Library/Application\\ Support/${contentUUID}/stims`, `Library/Application\\ Support/${appUUID}/assets`, 'stims');
+  async copyContent(contentUUID: string) {
+    console.log(`Copying content from this to  ${contentUUID}`);
+    const origContentFolder = await this.file.resolveDirectoryUrl(`${this.file.applicationStorageDirectory}/Library/Application Support/${contentUUID}`);
+    const batteryFolder = await this.file.resolveDirectoryUrl(`${this.file.applicationStorageDirectory}/Library/Application Support/${contentUUID}/battery`);
+    const stimsFolder = await this.file.resolveDirectoryUrl(`${this.file.applicationStorageDirectory}/Library/Application Support/${contentUUID}/stims`);
+    
+    try {
+      const hasContent = await this.file.checkDir(this.file.dataDirectory, 'content');
+      if  ( hasContent) {
+        await this.file.removeRecursively(this.file.dataDirectory, 'content');
+      }
+    } catch(e) {}
+    const contentDir = await this.file.createDir(this.file.dataDirectory, 'content', true);
+    console.log(`COntent fir ${contentDir.fullPath}`);
+    
+    //batteryFolder.copyTo(contentDir);
+    //stimsFolder.copyTo(contentDir);
+    this.file.copyDir(origContentFolder.toURL(), 'battery', contentDir.toURL(), 'battery');
+    this.file.copyDir(origContentFolder.toURL(), 'stims', contentDir.toURL(), 'stims');
   }
 
   async resetToOriginal() {
@@ -170,15 +189,14 @@ export class HomePage {
       appId: APP_ID
     });
     await this.recheck();
-    const resetInfo: DeployInfo = await Pro.deploy.info();
-    console.log(`App dep[loyed UUID ${resetInfo.deploy_uuid}`);
-    await this.copyContent(resetInfo.deploy_uuid, deployUUID);
+    console.log(`App dep[loyed UUID ${this.originalUUID}`);
+    await this.copyContent(deployUUID);
   }
 
 
   async recheck() {
     try {
-     await Pro.deploy.check();
+     await Pro.deploy.extract();  
     } catch (err) {
       
     }
