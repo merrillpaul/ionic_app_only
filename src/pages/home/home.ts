@@ -139,16 +139,24 @@ export class HomePage {
 
 
   async downloadNewContent() {
+    let loading = this.loadingCtrl.create({
+      content: "Downloading content....."
+    });
+    loading.present();   
     await Pro.deploy.download((progress) => {
       console.log(`Progress state ${progress}`);
     })
     await Pro.deploy.extract();
+    loading.dismissAll();
     await this.resetToOriginal();
     
   }
 
 
   async copyContent(appUUID: string, contentUUID: string) {
+    console.log(`Copying content from ${contentUUID} to ${appUUID}`);
+    const appSupportDir = await this.file.resolveDirectoryUrl(`${this.file.applicationStorageDirectory}/Library/Application\\ Support/${contentUUID}/battery`);
+    console.log(`Content battery dir ${appSupportDir.toURL()}`);
     this.file.copyDir(this.file.applicationStorageDirectory, `Library/Application\\ Support/${contentUUID}/battery`, `Library/Application\\ Support/${appUUID}/assets`, 'battery');
     this.file.copyDir(this.file.applicationStorageDirectory, `Library/Application\\ Support/${contentUUID}/stims`, `Library/Application\\ Support/${appUUID}/assets`, 'stims');
   }
@@ -161,36 +169,18 @@ export class HomePage {
       channel: APP_CHANNEL,
       appId: APP_ID
     });
-    await this.performAutomaticUpdate();
+    await this.recheck();
     const resetInfo: DeployInfo = await Pro.deploy.info();
     console.log(`App dep[loyed UUID ${resetInfo.deploy_uuid}`);
     await this.copyContent(resetInfo.deploy_uuid, deployUUID);
   }
 
 
-  async performAutomaticUpdate() {
-
-    /*
-      This code performs an entire Check, Download, Extract, Redirect flow for
-      you so you don't have to program the entire flow yourself. This should
-      work for a majority of use cases.
-    */
-
+  async recheck() {
     try {
-      const resp = await Pro.deploy.checkAndApply(true, function(progress){
-          this.downloadProgress = progress;
-      });
-
-      if (resp.update){
-        // We found an update, and are in process of redirecting you since you put true!
-      }else{
-        // No update available
-      }
+     await Pro.deploy.check();
     } catch (err) {
-      // We encountered an error.
-      // Here's how we would log it to Ionic Pro Monitoring while also catching:
-
-      // Pro.monitoring.exception(err);
+      
     }
   }
 
