@@ -149,8 +149,8 @@ export class HomePage {
 
 
   async copyContent(appUUID: string, contentUUID: string) {
-    this.file.copyDir(this.file.documentsDirectory, `Application\\ Support/${contentUUID}/battery`, `Application\\ Support/${appUUID}/assets`, 'battery');
-    this.file.copyDir(this.file.documentsDirectory, `Application\\ Support/${contentUUID}/stims`, `Application\\ Support/${appUUID}/assets`, 'stims');
+    this.file.copyDir(this.file.applicationStorageDirectory, `Library/Application\\ Support/${contentUUID}/battery`, `Library/Application\\ Support/${appUUID}/assets`, 'battery');
+    this.file.copyDir(this.file.applicationStorageDirectory, `Library/Application\\ Support/${contentUUID}/stims`, `Library/Application\\ Support/${appUUID}/assets`, 'stims');
   }
 
   async resetToOriginal() {
