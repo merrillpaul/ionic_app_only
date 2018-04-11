@@ -87,4 +87,5 @@
         <variable name="UPDATE_METHOD" value="auto" />
     </plugin>
     <engine name="ios" spec="~4.5.4" />
+    <plugin name="cordova-plugin-file" spec="^6.0.1" />
 </widget>
